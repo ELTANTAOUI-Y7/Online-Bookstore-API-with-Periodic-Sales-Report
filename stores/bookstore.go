@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"online-bookstore-api/interfaces"
 	"online-bookstore-api/models"
+	"strings"
 	"sync"
 )
 
@@ -81,8 +82,12 @@ func (s *InMemoryBookStore) SearchBooks(criteria models.SearchCriteria) ([]model
 	for _, book := range s.books {
 		matches := true
 
-		if criteria.Title != "" && book.Title != criteria.Title {
-			matches = false
+		// Case-insensitive partial match for title
+		if criteria.Title != "" {
+			titleMatch := strings.Contains(strings.ToLower(book.Title), strings.ToLower(criteria.Title))
+			if !titleMatch {
+				matches = false
+			}
 		}
 		if criteria.AuthorID != 0 && book.Author.ID != criteria.AuthorID {
 			matches = false
@@ -90,7 +95,7 @@ func (s *InMemoryBookStore) SearchBooks(criteria models.SearchCriteria) ([]model
 		if criteria.Genre != "" {
 			genreFound := false
 			for _, genre := range book.Genres {
-				if genre == criteria.Genre {
+				if strings.EqualFold(genre, criteria.Genre) {
 					genreFound = true
 					break
 				}

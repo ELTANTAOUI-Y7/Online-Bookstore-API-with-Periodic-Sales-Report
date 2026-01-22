@@ -2,7 +2,7 @@
 
 ## Project Status
 
-This project implements an Online Bookstore API with Periodic Sales Report generation. Currently, **Parts 1 and 2** are completed.
+This project implements an Online Bookstore API with Periodic Sales Report generation. Currently, **Parts 1, 2, and 3** are completed.
 
 ## Completed Parts
 
@@ -37,36 +37,39 @@ This project implements an Online Bookstore API with Periodic Sales Report gener
   - Automatic data loading on application start
   - Thread-safe data access throughout
 
-## Remaining Parts - To Do List
+### ✅ Part 3: RESTful API Endpoints
+- [x] HTTP handlers package created (`handlers/`)
+- [x] Books endpoints implemented:
+  - [x] `POST /books` - Create a new book
+  - [x] `GET /books/{id}` - Retrieve a book by ID
+  - [x] `PUT /books/{id}` - Update a book
+  - [x] `DELETE /books/{id}` - Delete a book
+  - [x] `GET /books` - Search for books using query parameters (supports title, author_id, genre, min_price, max_price)
+- [x] Authors endpoints implemented:
+  - [x] `POST /authors` - Create a new author
+  - [x] `GET /authors/{id}` - Retrieve an author by ID
+  - [x] `PUT /authors/{id}` - Update an author
+  - [x] `DELETE /authors/{id}` - Delete an author
+  - [x] `GET /authors` - List all authors
+- [x] Customers endpoints implemented:
+  - [x] `POST /customers` - Create a new customer
+  - [x] `GET /customers/{id}` - Retrieve a customer by ID
+  - [x] `PUT /customers/{id}` - Update a customer
+  - [x] `DELETE /customers/{id}` - Delete a customer
+  - [x] `GET /customers` - List all customers
+- [x] Orders endpoints implemented:
+  - [x] `POST /orders` - Place a new order (validates customer and books exist, calculates total)
+  - [x] `GET /orders/{id}` - Retrieve an order by ID
+  - [x] `PUT /orders/{id}` - Update an order
+  - [x] `DELETE /orders/{id}` - Delete an order
+  - [x] `GET /orders` - List all orders
+- [x] HTTP router set up using `net/http`
+- [x] Server configured to listen on port `:8080`
+- [x] Request logging middleware implemented
+- [x] JSON request/response handling
+- [x] Error handling with appropriate HTTP status codes
 
-### 📋 Part 3: RESTful API Endpoints
-- [ ] Create HTTP handlers package (`handlers/`)
-- [ ] Implement Books endpoints:
-  - [ ] `POST /books` - Create a new book
-  - [ ] `GET /books/{id}` - Retrieve a book by ID
-  - [ ] `PUT /books/{id}` - Update a book
-  - [ ] `DELETE /books/{id}` - Delete a book
-  - [ ] `GET /books` - Search for books using query parameters
-- [ ] Implement Authors endpoints:
-  - [ ] `POST /authors` - Create a new author
-  - [ ] `GET /authors/{id}` - Retrieve an author by ID
-  - [ ] `PUT /authors/{id}` - Update an author
-  - [ ] `DELETE /authors/{id}` - Delete an author
-  - [ ] `GET /authors` - List all authors
-- [ ] Implement Customers endpoints:
-  - [ ] `POST /customers` - Create a new customer
-  - [ ] `GET /customers/{id}` - Retrieve a customer by ID
-  - [ ] `PUT /customers/{id}` - Update a customer
-  - [ ] `DELETE /customers/{id}` - Delete a customer
-  - [ ] `GET /customers` - List all customers
-- [ ] Implement Orders endpoints:
-  - [ ] `POST /orders` - Place a new order
-  - [ ] `GET /orders/{id}` - Retrieve an order by ID
-  - [ ] `PUT /orders/{id}` - Update an order
-  - [ ] `DELETE /orders/{id}` - Delete an order
-  - [ ] `GET /orders` - List all orders
-- [ ] Set up HTTP router (using `net/http` or a router library)
-- [ ] Configure server to listen on a port (e.g., `:8080`)
+## Remaining Parts - To Do List
 
 ### 📋 Part 4: Concurrency and Context Handling
 - [ ] Accept `context.Context` from HTTP requests in handlers
@@ -175,7 +178,42 @@ go build -o bookstore.exe .
 ./bookstore.exe
 ```
 
-**Note:** The API server is not yet implemented. Once Part 3 is completed, the server will start and listen on a configured port.
+The server will start on `http://localhost:8080`. You can test the API endpoints using tools like `curl` or Postman.
+
+### Example API Calls
+
+**Create an Author:**
+```bash
+curl -X POST http://localhost:8080/authors \
+  -H "Content-Type: application/json" \
+  -d '{"first_name": "John", "last_name": "Doe", "bio": "Software Engineer"}'
+```
+
+**Create a Book:**
+```bash
+curl -X POST http://localhost:8080/books \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Effective Go Concurrency", "author": {"id": 1}, "genres": ["Programming"], "published_at": "2021-07-15T00:00:00Z", "price": 39.99, "stock": 100}'
+```
+
+**Search Books:**
+```bash
+curl http://localhost:8080/books?title=Go&genre=Programming
+```
+
+**Create a Customer:**
+```bash
+curl -X POST http://localhost:8080/customers \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Jane Smith", "email": "jane@example.com", "address": {"street": "123 Main St", "city": "New York", "state": "NY", "postal_code": "10001", "country": "USA"}}'
+```
+
+**Create an Order:**
+```bash
+curl -X POST http://localhost:8080/orders \
+  -H "Content-Type: application/json" \
+  -d '{"customer": {"id": 1}, "items": [{"book": {"id": 1}, "quantity": 2}], "status": "pending"}'
+```
 
 ## Next Steps
 
