@@ -1,6 +1,5 @@
 package models
-
-import "time"
+import ("time")
 
 // Book represents a book in the bookstore
 type Book struct {

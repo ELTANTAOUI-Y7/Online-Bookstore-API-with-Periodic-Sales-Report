@@ -50,7 +50,8 @@ func (s *InMemoryAuthorStore) UpdateAuthor(id int, author models.Author) (models
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if _, exists := s.authors[id]; !exists {
+	 _, exists := s.authors[id]
+	if !exists {
 		return models.Author{}, fmt.Errorf("author with ID %d not found", id)
 	}
 
@@ -64,7 +65,8 @@ func (s *InMemoryAuthorStore) DeleteAuthor(id int) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if _, exists := s.authors[id]; !exists {
+	_, exists := s.authors[id]
+	if !exists {
 		return fmt.Errorf("author with ID %d not found", id)
 	}
 
