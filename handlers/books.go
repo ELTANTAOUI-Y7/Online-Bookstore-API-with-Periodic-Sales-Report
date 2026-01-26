@@ -1,18 +1,27 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
 	"online-bookstore-api/models"
 	"strconv"
 	"strings"
+	"time"
 )
 
-// CreateBook handles POST /books
+// CreateBook handles POST /books with context support
 func (h *Handler) CreateBook(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		respondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	if checkContext(ctx, w) {
 		return
 	}
 
@@ -28,6 +37,10 @@ func (h *Handler) CreateBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if checkContext(ctx, w) {
+		return
+	}
+
 	createdBook, err := h.BookStore.CreateBook(book)
 	if err != nil {
 		log.Printf("Error creating book: %v", err)
@@ -39,10 +52,15 @@ func (h *Handler) CreateBook(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusCreated, createdBook)
 }
 
-// GetBook handles GET /books/{id}
+// GetBook handles GET /books/{id} with context support
 func (h *Handler) GetBook(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		respondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	ctx := r.Context()
+	if checkContext(ctx, w) {
 		return
 	}
 
@@ -54,7 +72,12 @@ func (h *Handler) GetBook(w http.ResponseWriter, r *http.Request) {
 
 	book, err := h.BookStore.GetBook(id)
 	if err != nil {
-		respondWithError(w, http.StatusNotFound, "Book not found")
+		if strings.Contains(err.Error(), "not found") {
+			respondWithError(w, http.StatusNotFound, "Book not found")
+		} else {
+			log.Printf("Error getting book: %v", err)
+			respondWithError(w, http.StatusInternalServerError, "Failed to retrieve book")
+		}
 		return
 	}
 
@@ -95,16 +118,27 @@ func (h *Handler) UpdateBook(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, updatedBook)
 }
 
-// DeleteBook handles DELETE /books/{id}
+// DeleteBook handles DELETE /books/{id} with context support
 func (h *Handler) DeleteBook(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		respondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	if checkContext(ctx, w) {
 		return
 	}
 
 	id, err := extractID(r.URL.Path, "/books/")
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid book ID")
+		return
+	}
+
+	if checkContext(ctx, w) {
 		return
 	}
 
@@ -122,10 +156,17 @@ func (h *Handler) DeleteBook(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, map[string]string{"message": "Book deleted successfully"})
 }
 
-// SearchBooks handles GET /books with query parameters
+// SearchBooks handles GET /books with query parameters and context support
 func (h *Handler) SearchBooks(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		respondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+
+	if checkContext(ctx, w) {
 		return
 	}
 
@@ -154,6 +195,11 @@ func (h *Handler) SearchBooks(w http.ResponseWriter, r *http.Request) {
 		if maxPrice, err := strconv.ParseFloat(maxPriceStr, 64); err == nil {
 			criteria.MaxPrice = maxPrice
 		}
+	}
+
+	// Check context before search operation
+	if checkContext(ctx, w) {
+		return
 	}
 
 	// If no search criteria provided, return all books

@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"online-bookstore-api/models"
@@ -17,9 +18,27 @@ func respondWithJSON(w http.ResponseWriter, statusCode int, payload interface{})
 	}
 }
 
-// respondWithError sends an error response
+// respondWithError sends an error response with consistent structure
 func respondWithError(w http.ResponseWriter, statusCode int, message string) {
 	respondWithJSON(w, statusCode, models.ErrorResponse{Error: message})
+}
+
+// checkContext checks if context is done and responds appropriately
+func checkContext(ctx context.Context, w http.ResponseWriter) bool {
+	select {
+	case <-ctx.Done():
+		switch ctx.Err() {
+		case context.Canceled:
+			respondWithError(w, http.StatusRequestTimeout, "Request was canceled")
+		case context.DeadlineExceeded:
+			respondWithError(w, http.StatusRequestTimeout, "Request timeout exceeded")
+		default:
+			respondWithError(w, http.StatusRequestTimeout, "Request context error")
+		}
+		return true
+	default:
+		return false
+	}
 }
 
 // extractID extracts an ID from a URL path

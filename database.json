@@ -1,0 +1,25 @@
+{
+  "books": {},
+  "authors": {
+    "1": {
+      "id": 1,
+      "first_name": "John",
+      "last_name": "Doe",
+      "bio": "Software Engineer"
+    },
+    "2": {
+      "id": 2,
+      "first_name": "John",
+      "last_name": "Doe",
+      "bio": "Software Engineer"
+    }
+  },
+  "customers": {},
+  "orders": {},
+  "next_ids": {
+    "book": 1,
+    "author": 3,
+    "customer": 1,
+    "order": 1
+  }
+}

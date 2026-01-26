@@ -1,17 +1,26 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
 	"online-bookstore-api/models"
 	"strings"
+	"time"
 )
 
-// CreateAuthor handles POST /authors
+// CreateAuthor handles POST /authors with context support
 func (h *Handler) CreateAuthor(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		respondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	if checkContext(ctx, w) {
 		return
 	}
 
@@ -27,6 +36,10 @@ func (h *Handler) CreateAuthor(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if checkContext(ctx, w) {
+		return
+	}
+
 	createdAuthor, err := h.AuthorStore.CreateAuthor(author)
 	if err != nil {
 		log.Printf("Error creating author: %v", err)
@@ -38,10 +51,15 @@ func (h *Handler) CreateAuthor(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusCreated, createdAuthor)
 }
 
-// GetAuthor handles GET /authors/{id}
+// GetAuthor handles GET /authors/{id} with context support
 func (h *Handler) GetAuthor(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		respondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	ctx := r.Context()
+	if checkContext(ctx, w) {
 		return
 	}
 
@@ -53,17 +71,29 @@ func (h *Handler) GetAuthor(w http.ResponseWriter, r *http.Request) {
 
 	author, err := h.AuthorStore.GetAuthor(id)
 	if err != nil {
-		respondWithError(w, http.StatusNotFound, "Author not found")
+		if strings.Contains(err.Error(), "not found") {
+			respondWithError(w, http.StatusNotFound, "Author not found")
+		} else {
+			log.Printf("Error getting author: %v", err)
+			respondWithError(w, http.StatusInternalServerError, "Failed to retrieve author")
+		}
 		return
 	}
 
 	respondWithJSON(w, http.StatusOK, author)
 }
 
-// UpdateAuthor handles PUT /authors/{id}
+// UpdateAuthor handles PUT /authors/{id} with context support
 func (h *Handler) UpdateAuthor(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		respondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	if checkContext(ctx, w) {
 		return
 	}
 
@@ -76,6 +106,10 @@ func (h *Handler) UpdateAuthor(w http.ResponseWriter, r *http.Request) {
 	var author models.Author
 	if err := json.NewDecoder(r.Body).Decode(&author); err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if checkContext(ctx, w) {
 		return
 	}
 
@@ -94,16 +128,27 @@ func (h *Handler) UpdateAuthor(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, updatedAuthor)
 }
 
-// DeleteAuthor handles DELETE /authors/{id}
+// DeleteAuthor handles DELETE /authors/{id} with context support
 func (h *Handler) DeleteAuthor(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		respondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	if checkContext(ctx, w) {
 		return
 	}
 
 	id, err := extractID(r.URL.Path, "/authors/")
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid author ID")
+		return
+	}
+
+	if checkContext(ctx, w) {
 		return
 	}
 
@@ -121,10 +166,15 @@ func (h *Handler) DeleteAuthor(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, map[string]string{"message": "Author deleted successfully"})
 }
 
-// GetAllAuthors handles GET /authors
+// GetAllAuthors handles GET /authors with context support
 func (h *Handler) GetAllAuthors(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		respondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	ctx := r.Context()
+	if checkContext(ctx, w) {
 		return
 	}
 

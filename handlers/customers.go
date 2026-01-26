@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -9,10 +10,17 @@ import (
 	"time"
 )
 
-// CreateCustomer handles POST /customers
+// CreateCustomer handles POST /customers with context support
 func (h *Handler) CreateCustomer(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		respondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	if checkContext(ctx, w) {
 		return
 	}
 
@@ -31,6 +39,10 @@ func (h *Handler) CreateCustomer(w http.ResponseWriter, r *http.Request) {
 	// Set CreatedAt if not provided
 	if customer.CreatedAt.IsZero() {
 		customer.CreatedAt = time.Now()
+	}
+
+	if checkContext(ctx, w) {
+		return
 	}
 
 	createdCustomer, err := h.CustomerStore.CreateCustomer(customer)
@@ -66,10 +78,17 @@ func (h *Handler) GetCustomer(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, customer)
 }
 
-// UpdateCustomer handles PUT /customers/{id}
+// UpdateCustomer handles PUT /customers/{id} with context support
 func (h *Handler) UpdateCustomer(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		respondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	if checkContext(ctx, w) {
 		return
 	}
 
@@ -82,6 +101,10 @@ func (h *Handler) UpdateCustomer(w http.ResponseWriter, r *http.Request) {
 	var customer models.Customer
 	if err := json.NewDecoder(r.Body).Decode(&customer); err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if checkContext(ctx, w) {
 		return
 	}
 
@@ -100,16 +123,27 @@ func (h *Handler) UpdateCustomer(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, updatedCustomer)
 }
 
-// DeleteCustomer handles DELETE /customers/{id}
+// DeleteCustomer handles DELETE /customers/{id} with context support
 func (h *Handler) DeleteCustomer(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		respondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	if checkContext(ctx, w) {
 		return
 	}
 
 	id, err := extractID(r.URL.Path, "/customers/")
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, "Invalid customer ID")
+		return
+	}
+
+	if checkContext(ctx, w) {
 		return
 	}
 
@@ -127,10 +161,15 @@ func (h *Handler) DeleteCustomer(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, map[string]string{"message": "Customer deleted successfully"})
 }
 
-// GetAllCustomers handles GET /customers
+// GetAllCustomers handles GET /customers with context support
 func (h *Handler) GetAllCustomers(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		respondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	ctx := r.Context()
+	if checkContext(ctx, w) {
 		return
 	}
 

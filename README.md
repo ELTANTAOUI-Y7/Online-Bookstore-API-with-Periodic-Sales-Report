@@ -2,7 +2,7 @@
 
 ## Project Status
 
-This project implements an Online Bookstore API with Periodic Sales Report generation. Currently, **Parts 1, 2, and 3** are completed.
+This project implements an Online Bookstore API with Periodic Sales Report generation. Currently, **Parts 1, 2, 3, 5, 6, and 7** are completed.
 
 ## Completed Parts
 
@@ -69,29 +69,37 @@ This project implements an Online Bookstore API with Periodic Sales Report gener
 - [x] JSON request/response handling
 - [x] Error handling with appropriate HTTP status codes
 
+### ✅ Part 5: Concurrency and Synchronization
+- [x] All stores use `sync.RWMutex` for thread-safe access
+- [x] Handlers can handle multiple concurrent requests without data corruption
+- [x] Goroutines implemented for concurrent order processing (CreateOrder, GetOrder, GetAllOrders)
+- [x] Mutex synchronization verified in all stores (BookStore, AuthorStore, CustomerStore, OrderStore)
+- [x] Read locks (RLock) for read operations, write locks (Lock) for write operations
+
+### ✅ Part 6: Context for Cancellation and Timeouts
+- [x] All handlers accept `context.Context` from HTTP requests
+- [x] Context timeouts implemented (5-10 seconds depending on operation)
+- [x] `ctx.Done()` checks in all handlers and long-running operations
+- [x] Proper handling of context cancellation and deadline exceeded
+- [x] Context-aware error responses for timeouts and cancellations
+- [x] Context checks before and during operations
+
+### ✅ Part 7: Error Handling and Responses
+- [x] Consistent error response structure using `ErrorResponse` struct
+- [x] Appropriate HTTP status codes:
+  - [x] `200 OK` for successful GET requests
+  - [x] `201 Created` for successful POST requests
+  - [x] `400 Bad Request` for invalid input
+  - [x] `404 Not Found` for missing resources
+  - [x] `408 Request Timeout` for context timeouts/cancellations
+  - [x] `500 Internal Server Error` for server errors
+- [x] `log` package used to record:
+  - [x] API requests (method, path) via middleware
+  - [x] Errors and exceptions
+  - [x] Significant events (orders placed, books created, etc.)
+- [x] Helper functions for JSON error responses (`respondWithError`, `respondWithJSON`)
+
 ## Remaining Parts - To Do List
-
-### 📋 Part 4: Concurrency and Context Handling
-- [ ] Accept `context.Context` from HTTP requests in handlers
-- [ ] Use contexts to handle client cancellations
-- [ ] Check `ctx.Done()` in long-running operations
-- [ ] Implement goroutines for concurrent order processing
-- [ ] Ensure all handlers can handle multiple concurrent requests
-- [ ] Add request timeouts where appropriate
-
-### 📋 Part 5: Error Handling and Logging
-- [ ] Implement consistent error response structure
-- [ ] Return appropriate HTTP status codes:
-  - [ ] `200 OK` for successful GET requests
-  - [ ] `201 Created` for successful POST requests
-  - [ ] `400 Bad Request` for invalid input
-  - [ ] `404 Not Found` for missing resources
-  - [ ] `500 Internal Server Error` for server errors
-- [ ] Use `log` package to record:
-  - [ ] API requests (method, path, status)
-  - [ ] Errors and exceptions
-  - [ ] Significant events (orders placed, reports generated)
-- [ ] Create helper functions for JSON error responses
 
 ### 📋 Part 6: Periodic Sales Report Generation
 - [ ] Create `reports/` package for report generation logic
