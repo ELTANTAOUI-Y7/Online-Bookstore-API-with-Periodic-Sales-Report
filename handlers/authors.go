@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"net/http"
 	"online-bookstore-api/models"
 	"strings"
@@ -42,12 +41,12 @@ func (h *Handler) CreateAuthor(w http.ResponseWriter, r *http.Request) {
 
 	createdAuthor, err := h.AuthorStore.CreateAuthor(author)
 	if err != nil {
-		log.Printf("Error creating author: %v", err)
+		LogError("CreateAuthor", "Failed to create author", err)
 		respondWithError(w, http.StatusInternalServerError, "Failed to create author")
 		return
 	}
 
-	log.Printf("Author created: ID=%d, Name=%s %s", createdAuthor.ID, createdAuthor.FirstName, createdAuthor.LastName)
+	LogAuthorCreated(createdAuthor.ID, createdAuthor.FirstName, createdAuthor.LastName)
 	respondWithJSON(w, http.StatusCreated, createdAuthor)
 }
 
@@ -72,9 +71,10 @@ func (h *Handler) GetAuthor(w http.ResponseWriter, r *http.Request) {
 	author, err := h.AuthorStore.GetAuthor(id)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
+			LogInfo("GetAuthor", "Author not found", map[string]interface{}{"author_id": id})
 			respondWithError(w, http.StatusNotFound, "Author not found")
 		} else {
-			log.Printf("Error getting author: %v", err)
+			LogError("GetAuthor", "Failed to retrieve author", err)
 			respondWithError(w, http.StatusInternalServerError, "Failed to retrieve author")
 		}
 		return
@@ -116,15 +116,18 @@ func (h *Handler) UpdateAuthor(w http.ResponseWriter, r *http.Request) {
 	updatedAuthor, err := h.AuthorStore.UpdateAuthor(id, author)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
+			LogInfo("UpdateAuthor", "Author not found", map[string]interface{}{"author_id": id})
 			respondWithError(w, http.StatusNotFound, "Author not found")
 		} else {
-			log.Printf("Error updating author: %v", err)
+			LogError("UpdateAuthor", "Failed to update author", err)
 			respondWithError(w, http.StatusInternalServerError, "Failed to update author")
 		}
 		return
 	}
 
-	log.Printf("Author updated: ID=%d", updatedAuthor.ID)
+	LogUpdate("Author", updatedAuthor.ID, map[string]interface{}{
+		"name": updatedAuthor.FirstName + " " + updatedAuthor.LastName,
+	})
 	respondWithJSON(w, http.StatusOK, updatedAuthor)
 }
 
@@ -154,15 +157,16 @@ func (h *Handler) DeleteAuthor(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.AuthorStore.DeleteAuthor(id); err != nil {
 		if strings.Contains(err.Error(), "not found") {
+			LogInfo("DeleteAuthor", "Author not found", map[string]interface{}{"author_id": id})
 			respondWithError(w, http.StatusNotFound, "Author not found")
 		} else {
-			log.Printf("Error deleting author: %v", err)
+			LogError("DeleteAuthor", "Failed to delete author", err)
 			respondWithError(w, http.StatusInternalServerError, "Failed to delete author")
 		}
 		return
 	}
 
-	log.Printf("Author deleted: ID=%d", id)
+	LogDelete("Author", id)
 	respondWithJSON(w, http.StatusOK, map[string]string{"message": "Author deleted successfully"})
 }
 
@@ -180,10 +184,11 @@ func (h *Handler) GetAllAuthors(w http.ResponseWriter, r *http.Request) {
 
 	authors, err := h.AuthorStore.GetAllAuthors()
 	if err != nil {
-		log.Printf("Error getting all authors: %v", err)
+		LogError("GetAllAuthors", "Failed to retrieve authors", err)
 		respondWithError(w, http.StatusInternalServerError, "Failed to retrieve authors")
 		return
 	}
 
+	LogInfo("GetAllAuthors", "Retrieved all authors", map[string]interface{}{"count": len(authors)})
 	respondWithJSON(w, http.StatusOK, authors)
 }

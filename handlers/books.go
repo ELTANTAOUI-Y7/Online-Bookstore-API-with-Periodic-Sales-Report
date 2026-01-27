@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"net/http"
 	"online-bookstore-api/models"
 	"strconv"
@@ -43,12 +42,12 @@ func (h *Handler) CreateBook(w http.ResponseWriter, r *http.Request) {
 
 	createdBook, err := h.BookStore.CreateBook(book)
 	if err != nil {
-		log.Printf("Error creating book: %v", err)
+		LogError("CreateBook", "Failed to create book", err)
 		respondWithError(w, http.StatusInternalServerError, "Failed to create book")
 		return
 	}
 
-	log.Printf("Book created: ID=%d, Title=%s", createdBook.ID, createdBook.Title)
+	LogBookCreated(createdBook.ID, createdBook.Title, createdBook.Author.ID)
 	respondWithJSON(w, http.StatusCreated, createdBook)
 }
 
@@ -73,9 +72,10 @@ func (h *Handler) GetBook(w http.ResponseWriter, r *http.Request) {
 	book, err := h.BookStore.GetBook(id)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
+			LogInfo("GetBook", "Book not found", map[string]interface{}{"book_id": id})
 			respondWithError(w, http.StatusNotFound, "Book not found")
 		} else {
-			log.Printf("Error getting book: %v", err)
+			LogError("GetBook", "Failed to retrieve book", err)
 			respondWithError(w, http.StatusInternalServerError, "Failed to retrieve book")
 		}
 		return
@@ -106,15 +106,16 @@ func (h *Handler) UpdateBook(w http.ResponseWriter, r *http.Request) {
 	updatedBook, err := h.BookStore.UpdateBook(id, book)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
+			LogInfo("UpdateBook", "Book not found", map[string]interface{}{"book_id": id})
 			respondWithError(w, http.StatusNotFound, "Book not found")
 		} else {
-			log.Printf("Error updating book: %v", err)
+			LogError("UpdateBook", "Failed to update book", err)
 			respondWithError(w, http.StatusInternalServerError, "Failed to update book")
 		}
 		return
 	}
 
-	log.Printf("Book updated: ID=%d", updatedBook.ID)
+	LogUpdate("Book", updatedBook.ID, map[string]interface{}{"title": updatedBook.Title})
 	respondWithJSON(w, http.StatusOK, updatedBook)
 }
 
@@ -144,15 +145,16 @@ func (h *Handler) DeleteBook(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.BookStore.DeleteBook(id); err != nil {
 		if strings.Contains(err.Error(), "not found") {
+			LogInfo("DeleteBook", "Book not found", map[string]interface{}{"book_id": id})
 			respondWithError(w, http.StatusNotFound, "Book not found")
 		} else {
-			log.Printf("Error deleting book: %v", err)
+			LogError("DeleteBook", "Failed to delete book", err)
 			respondWithError(w, http.StatusInternalServerError, "Failed to delete book")
 		}
 		return
 	}
 
-	log.Printf("Book deleted: ID=%d", id)
+	LogDelete("Book", id)
 	respondWithJSON(w, http.StatusOK, map[string]string{"message": "Book deleted successfully"})
 }
 
@@ -207,20 +209,26 @@ func (h *Handler) SearchBooks(w http.ResponseWriter, r *http.Request) {
 		criteria.MinPrice == 0 && criteria.MaxPrice == 0 {
 		books, err := h.BookStore.GetAllBooks()
 		if err != nil {
-			log.Printf("Error getting all books: %v", err)
+			LogError("SearchBooks", "Failed to retrieve all books", err)
 			respondWithError(w, http.StatusInternalServerError, "Failed to retrieve books")
 			return
 		}
+		LogInfo("SearchBooks", "Retrieved all books", map[string]interface{}{"count": len(books)})
 		respondWithJSON(w, http.StatusOK, books)
 		return
 	}
 
 	books, err := h.BookStore.SearchBooks(criteria)
 	if err != nil {
-		log.Printf("Error searching books: %v", err)
+		LogError("SearchBooks", "Failed to search books", err)
 		respondWithError(w, http.StatusInternalServerError, "Failed to search books")
 		return
 	}
+	
+	LogInfo("SearchBooks", "Search completed", map[string]interface{}{
+		"criteria": criteria,
+		"results_count": len(books),
+	})
 
 	respondWithJSON(w, http.StatusOK, books)
 }

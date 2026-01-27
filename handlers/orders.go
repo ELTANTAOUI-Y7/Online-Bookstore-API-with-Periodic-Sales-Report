@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"net/http"
 	"online-bookstore-api/models"
 	"strings"
@@ -44,6 +43,7 @@ func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	customer, err := h.CustomerStore.GetCustomer(order.Customer.ID)
 	if err != nil {
+		LogInfo("CreateOrder", "Customer not found", map[string]interface{}{"customer_id": order.Customer.ID})
 		respondWithError(w, http.StatusBadRequest, "Customer not found")
 		return
 	}
@@ -59,6 +59,7 @@ func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 
 		book, err := h.BookStore.GetBook(item.Book.ID)
 		if err != nil {
+			LogInfo("CreateOrder", "Book not found in order", map[string]interface{}{"book_id": item.Book.ID})
 			respondWithError(w, http.StatusBadRequest, "Book not found")
 			return
 		}
@@ -100,11 +101,11 @@ func (h *Handler) CreateOrder(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusRequestTimeout, "Request timeout while processing order")
 		return
 	case err := <-errChan:
-		log.Printf("Error creating order: %v", err)
+		LogError("CreateOrder", "Failed to create order", err)
 		respondWithError(w, http.StatusInternalServerError, "Failed to create order")
 		return
 	case createdOrder := <-orderChan:
-		log.Printf("Order created: ID=%d, Customer=%d, Total=%.2f", createdOrder.ID, createdOrder.Customer.ID, createdOrder.TotalPrice)
+		LogOrderPlaced(createdOrder.ID, createdOrder.Customer.ID, createdOrder.TotalPrice, len(createdOrder.Items))
 		respondWithJSON(w, http.StatusCreated, createdOrder)
 	}
 }
@@ -146,9 +147,10 @@ func (h *Handler) GetOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	case err := <-errChan:
 		if strings.Contains(err.Error(), "not found") {
+			LogInfo("GetOrder", "Order not found", map[string]interface{}{"order_id": id})
 			respondWithError(w, http.StatusNotFound, "Order not found")
 		} else {
-			log.Printf("Error getting order: %v", err)
+			LogError("GetOrder", "Failed to retrieve order", err)
 			respondWithError(w, http.StatusInternalServerError, "Failed to retrieve order")
 		}
 		return
@@ -190,15 +192,19 @@ func (h *Handler) UpdateOrder(w http.ResponseWriter, r *http.Request) {
 	updatedOrder, err := h.OrderStore.UpdateOrder(id, order)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
+			LogInfo("UpdateOrder", "Order not found", map[string]interface{}{"order_id": id})
 			respondWithError(w, http.StatusNotFound, "Order not found")
 		} else {
-			log.Printf("Error updating order: %v", err)
+			LogError("UpdateOrder", "Failed to update order", err)
 			respondWithError(w, http.StatusInternalServerError, "Failed to update order")
 		}
 		return
 	}
 
-	log.Printf("Order updated: ID=%d", updatedOrder.ID)
+	LogUpdate("Order", updatedOrder.ID, map[string]interface{}{
+		"status": updatedOrder.Status,
+		"total_price": updatedOrder.TotalPrice,
+	})
 	respondWithJSON(w, http.StatusOK, updatedOrder)
 }
 
@@ -228,15 +234,16 @@ func (h *Handler) DeleteOrder(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.OrderStore.DeleteOrder(id); err != nil {
 		if strings.Contains(err.Error(), "not found") {
+			LogInfo("DeleteOrder", "Order not found", map[string]interface{}{"order_id": id})
 			respondWithError(w, http.StatusNotFound, "Order not found")
 		} else {
-			log.Printf("Error deleting order: %v", err)
+			LogError("DeleteOrder", "Failed to delete order", err)
 			respondWithError(w, http.StatusInternalServerError, "Failed to delete order")
 		}
 		return
 	}
 
-	log.Printf("Order deleted: ID=%d", id)
+	LogDelete("Order", id)
 	respondWithJSON(w, http.StatusOK, map[string]string{"message": "Order deleted successfully"})
 }
 
@@ -272,10 +279,11 @@ func (h *Handler) GetAllOrders(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusRequestTimeout, "Request timeout while retrieving orders")
 		return
 	case err := <-errChan:
-		log.Printf("Error getting all orders: %v", err)
+		LogError("GetAllOrders", "Failed to retrieve orders", err)
 		respondWithError(w, http.StatusInternalServerError, "Failed to retrieve orders")
 		return
 	case orders := <-ordersChan:
+		LogInfo("GetAllOrders", "Retrieved all orders", map[string]interface{}{"count": len(orders)})
 		respondWithJSON(w, http.StatusOK, orders)
 	}
 }

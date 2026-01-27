@@ -20,6 +20,14 @@ func respondWithJSON(w http.ResponseWriter, statusCode int, payload interface{})
 
 // respondWithError sends an error response with consistent structure
 func respondWithError(w http.ResponseWriter, statusCode int, message string) {
+	// Log error responses (4xx and 5xx)
+	if statusCode >= 400 {
+		LogError("HTTP", "Error response", nil)
+		LogInfo("HTTP", "Error details", map[string]interface{}{
+			"status_code": statusCode,
+			"message": message,
+		})
+	}
 	respondWithJSON(w, statusCode, models.ErrorResponse{Error: message})
 }
 

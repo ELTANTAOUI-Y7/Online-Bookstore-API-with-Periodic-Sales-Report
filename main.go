@@ -77,10 +77,72 @@ func main() {
 	log.Println("Server exited")
 }
 
-// loggingMiddleware logs HTTP requests
+// responseWriter wraps http.ResponseWriter to capture status code
+type responseWriter struct {
+	http.ResponseWriter
+	statusCode int
+	bytesWritten int64
+}
+
+func newResponseWriter(w http.ResponseWriter) *responseWriter {
+	return &responseWriter{
+		ResponseWriter: w,
+		statusCode:     http.StatusOK, // Default status code
+	}
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	rw.statusCode = code
+	rw.ResponseWriter.WriteHeader(code)
+}
+
+func (rw *responseWriter) Write(b []byte) (int, error) {
+	n, err := rw.ResponseWriter.Write(b)
+	rw.bytesWritten += int64(n)
+	return n, err
+}
+
+// loggingMiddleware logs HTTP requests with detailed information
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("%s %s", r.Method, r.URL.Path)
-		next.ServeHTTP(w, r)
+		start := time.Now()
+		
+		// Wrap the response writer to capture status code
+		rw := newResponseWriter(w)
+		
+		// Process the request
+		next.ServeHTTP(rw, r)
+		
+		// Calculate duration
+		duration := time.Since(start)
+		
+		// Get client IP
+		clientIP := r.RemoteAddr
+		if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
+			clientIP = forwarded
+		}
+		
+		// Log request details
+		log.Printf(
+			"[%s] %s %s %s %d %d %v",
+			clientIP,
+			r.Method,
+			r.URL.Path,
+			r.Proto,
+			rw.statusCode,
+			rw.bytesWritten,
+			duration,
+		)
+		
+		// Log errors (4xx and 5xx status codes)
+		if rw.statusCode >= 400 {
+			log.Printf(
+				"ERROR: %s %s returned status %d - Duration: %v",
+				r.Method,
+				r.URL.Path,
+				rw.statusCode,
+				duration,
+			)
+		}
 	})
 }

@@ -2,7 +2,7 @@
 
 ## Project Status
 
-This project implements an Online Bookstore API with Periodic Sales Report generation. Currently, **Parts 1, 2, 3, 5, 6, and 7** are completed.
+This project implements an Online Bookstore API with Periodic Sales Report generation. Currently, **Parts 1, 2, 3, 5, 6, 7, and 8** are completed.
 
 ## Completed Parts
 
@@ -98,6 +98,36 @@ This project implements an Online Bookstore API with Periodic Sales Report gener
   - [x] Errors and exceptions
   - [x] Significant events (orders placed, books created, etc.)
 - [x] Helper functions for JSON error responses (`respondWithError`, `respondWithJSON`)
+
+### ✅ Part 8: Logging
+- [x] Enhanced logging middleware with detailed request information:
+  - [x] HTTP method, path, protocol
+  - [x] Response status codes
+  - [x] Response size (bytes written)
+  - [x] Request duration/timing
+  - [x] Client IP address
+  - [x] Error logging for 4xx and 5xx responses
+- [x] Comprehensive logging utility functions (`handlers/logging.go`):
+  - [x] `LogEvent()` - Log significant events with timestamps
+  - [x] `LogError()` - Log errors with context
+  - [x] `LogInfo()` - Log informational messages
+  - [x] Specialized logging functions for specific events
+- [x] All significant events logged:
+  - [x] Orders placed (`LogOrderPlaced`) - includes order ID, customer ID, total price, item count
+  - [x] Books created (`LogBookCreated`) - includes book ID, title, author ID
+  - [x] Authors created (`LogAuthorCreated`) - includes author ID, name
+  - [x] Customers created (`LogCustomerCreated`) - includes customer ID, name, email
+  - [x] Updates logged (`LogUpdate`) - includes entity type, ID, and details
+  - [x] Deletes logged (`LogDelete`) - includes entity type and ID
+- [x] Error logging throughout:
+  - [x] All error paths log errors with context
+  - [x] Not found errors logged as info
+  - [x] Server errors logged with full error details
+  - [x] HTTP error responses logged automatically
+- [x] Request logging:
+  - [x] All API requests logged via middleware
+  - [x] Search operations logged with criteria and result counts
+  - [x] List operations logged with result counts
 
 ## Remaining Parts - To Do List
 

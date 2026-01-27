@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"log"
 	"net/http"
 	"online-bookstore-api/models"
 	"strings"
@@ -47,12 +46,12 @@ func (h *Handler) CreateCustomer(w http.ResponseWriter, r *http.Request) {
 
 	createdCustomer, err := h.CustomerStore.CreateCustomer(customer)
 	if err != nil {
-		log.Printf("Error creating customer: %v", err)
+		LogError("CreateCustomer", "Failed to create customer", err)
 		respondWithError(w, http.StatusInternalServerError, "Failed to create customer")
 		return
 	}
 
-	log.Printf("Customer created: ID=%d, Name=%s", createdCustomer.ID, createdCustomer.Name)
+	LogCustomerCreated(createdCustomer.ID, createdCustomer.Name, createdCustomer.Email)
 	respondWithJSON(w, http.StatusCreated, createdCustomer)
 }
 
@@ -111,15 +110,19 @@ func (h *Handler) UpdateCustomer(w http.ResponseWriter, r *http.Request) {
 	updatedCustomer, err := h.CustomerStore.UpdateCustomer(id, customer)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
+			LogInfo("UpdateCustomer", "Customer not found", map[string]interface{}{"customer_id": id})
 			respondWithError(w, http.StatusNotFound, "Customer not found")
 		} else {
-			log.Printf("Error updating customer: %v", err)
+			LogError("UpdateCustomer", "Failed to update customer", err)
 			respondWithError(w, http.StatusInternalServerError, "Failed to update customer")
 		}
 		return
 	}
 
-	log.Printf("Customer updated: ID=%d", updatedCustomer.ID)
+	LogUpdate("Customer", updatedCustomer.ID, map[string]interface{}{
+		"name": updatedCustomer.Name,
+		"email": updatedCustomer.Email,
+	})
 	respondWithJSON(w, http.StatusOK, updatedCustomer)
 }
 
@@ -149,15 +152,16 @@ func (h *Handler) DeleteCustomer(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.CustomerStore.DeleteCustomer(id); err != nil {
 		if strings.Contains(err.Error(), "not found") {
+			LogInfo("DeleteCustomer", "Customer not found", map[string]interface{}{"customer_id": id})
 			respondWithError(w, http.StatusNotFound, "Customer not found")
 		} else {
-			log.Printf("Error deleting customer: %v", err)
+			LogError("DeleteCustomer", "Failed to delete customer", err)
 			respondWithError(w, http.StatusInternalServerError, "Failed to delete customer")
 		}
 		return
 	}
 
-	log.Printf("Customer deleted: ID=%d", id)
+	LogDelete("Customer", id)
 	respondWithJSON(w, http.StatusOK, map[string]string{"message": "Customer deleted successfully"})
 }
 
@@ -175,11 +179,12 @@ func (h *Handler) GetAllCustomers(w http.ResponseWriter, r *http.Request) {
 
 	customers, err := h.CustomerStore.GetAllCustomers()
 	if err != nil {
-		log.Printf("Error getting all customers: %v", err)
+		LogError("GetAllCustomers", "Failed to retrieve customers", err)
 		respondWithError(w, http.StatusInternalServerError, "Failed to retrieve customers")
 		return
 	}
 
+	LogInfo("GetAllCustomers", "Retrieved all customers", map[string]interface{}{"count": len(customers)})
 	respondWithJSON(w, http.StatusOK, customers)
 }
 
