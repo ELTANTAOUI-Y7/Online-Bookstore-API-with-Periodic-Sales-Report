@@ -159,16 +159,16 @@ This project implements an Online Bookstore API with Periodic Sales Report gener
 
 ### 📋 Part 7: Documentation
 - [ ] Update README.md with:
-  - [ ] How to build and run the application
-  - [ ] API endpoint documentation with examples
-  - [ ] Request/response examples for each endpoint
-  - [ ] Environment variables or configuration options
-  - [ ] Manual test cases showcasing functionality
+- [ ] How to build and run the application
+- [ ] API endpoint documentation with examples
+- [ ] Request/response examples for each endpoint
+- [ ] Environment variables or configuration options
+- [ ] Manual test cases showcasing functionality
 - [ ] Create OpenAPI/Swagger specification file:
-  - [ ] Define all endpoints
-  - [ ] Document request/response schemas
-  - [ ] Include example requests and responses
-  - [ ] Save as `openapi.yaml` or `swagger.json`
+- [x] Define all endpoints
+- [x] Document request/response schemas
+- [x] Include example requests and responses
+- [x] Save as `openapi.yaml`
 
 ### 📋 Part 8: Testing and Finalization
 - [ ] Test all CRUD operations for each entity
@@ -217,6 +217,199 @@ go build -o bookstore.exe .
 ```
 
 The server will start on `http://localhost:8080`. You can test the API endpoints using tools like `curl` or Postman.
+
+## API Overview
+
+Base URL: `http://localhost:8080`
+
+### Main Resources
+
+- `Authors` – `/authors`, `/authors/{id}`
+- `Books` – `/books`, `/books/{id}`
+- `Customers` – `/customers`, `/customers/{id}`
+- `Orders` – `/orders`, `/orders/{id}`
+
+## API Endpoints (Summary)
+
+### Authors
+
+- `GET /authors` – List all authors
+- `POST /authors` – Create a new author
+- `GET /authors/{id}` – Get a specific author
+- `PUT /authors/{id}` – Update an author
+- `DELETE /authors/{id}` – Delete an author
+
+**Example – Create Author (request):**
+
+```bash
+curl -X POST http://localhost:8080/authors \
+  -H "Content-Type: application/json" \
+  -d '{
+    "first_name": "John",
+    "last_name": "Doe",
+    "bio": "Software Engineer with expertise in Go."
+  }'
+```
+
+**Example – Create Author (response):**
+
+```json
+{
+  "id": 1,
+  "first_name": "John",
+  "last_name": "Doe",
+  "bio": "Software Engineer with expertise in Go."
+}
+```
+
+### Books
+
+- `GET /books` – List or search books
+  - Query params: `title`, `author_id`, `genre`, `min_price`, `max_price`
+- `POST /books` – Create a new book
+- `GET /books/{id}` – Get a specific book
+- `PUT /books/{id}` – Update a book
+- `DELETE /books/{id}` – Delete a book
+
+**Example – Create Book (request):**
+
+```bash
+curl -X POST http://localhost:8080/books \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Effective Go Concurrency",
+    "author": { "id": 1 },
+    "genres": ["Programming", "Technology"],
+    "published_at": "2021-07-15T00:00:00Z",
+    "price": 39.99,
+    "stock": 100
+  }'
+```
+
+**Example – Get Book (response):**
+
+```json
+{
+  "id": 1,
+  "title": "Effective Go Concurrency",
+  "author": {
+    "id": 1,
+    "first_name": "John",
+    "last_name": "Doe",
+    "bio": "Software Engineer with expertise in Go."
+  },
+  "genres": ["Programming", "Technology"],
+  "published_at": "2021-07-15T00:00:00Z",
+  "price": 39.99,
+  "stock": 100
+}
+```
+
+### Customers
+
+- `GET /customers` – List all customers
+- `POST /customers` – Create a new customer
+- `GET /customers/{id}` – Get a specific customer
+- `PUT /customers/{id}` – Update a customer
+- `DELETE /customers/{id}` – Delete a customer
+
+**Example – Create Customer (request):**
+
+```bash
+curl -X POST http://localhost:8080/customers \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Jane Smith",
+    "email": "jane@example.com",
+    "address": {
+      "street": "123 Main St",
+      "city": "New York",
+      "state": "NY",
+      "postal_code": "10001",
+      "country": "USA"
+    }
+  }'
+```
+
+### Orders
+
+- `GET /orders` – List all orders
+- `POST /orders` – Create a new order
+- `GET /orders/{id}` – Get a specific order
+- `PUT /orders/{id}` – Update an order
+- `DELETE /orders/{id}` – Delete an order
+
+**Example – Create Order (request):**
+
+```bash
+curl -X POST http://localhost:8080/orders \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer": { "id": 1 },
+    "items": [
+      {
+        "book": { "id": 1 },
+        "quantity": 2
+      }
+    ],
+    "status": "pending"
+  }'
+```
+
+**Example – Create Order (response):**
+
+```json
+{
+  "id": 1,
+  "customer": {
+    "id": 1,
+    "name": "Jane Smith",
+    "email": "jane@example.com",
+    "address": {
+      "street": "123 Main St",
+      "city": "New York",
+      "state": "NY",
+      "postal_code": "10001",
+      "country": "USA"
+    },
+    "created_at": "2026-01-25T10:00:00Z"
+  },
+  "items": [
+    {
+      "book": {
+        "id": 1,
+        "title": "Effective Go Concurrency",
+        "author": {
+          "id": 1,
+          "first_name": "John",
+          "last_name": "Doe",
+          "bio": "Software Engineer with expertise in Go."
+        },
+        "genres": ["Programming", "Technology"],
+        "published_at": "2021-07-15T00:00:00Z",
+        "price": 39.99,
+        "stock": 100
+      },
+      "quantity": 2
+    }
+  ],
+  "total_price": 79.98,
+  "created_at": "2026-01-25T10:05:00Z",
+  "status": "pending"
+}
+```
+
+## Swagger / OpenAPI Specification
+
+An OpenAPI 3.0 specification is provided in `openapi.yaml` at the root of the project.
+
+You can use this file with tools like:
+
+- Swagger UI
+- Postman
+- Insomnia
+
+To visualize and interact with the API.
 
 ### Example API Calls
 
