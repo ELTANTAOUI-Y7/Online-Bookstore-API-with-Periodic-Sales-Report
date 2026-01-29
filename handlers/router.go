@@ -25,6 +25,9 @@ func (h *Handler) SetupRoutes() http.Handler {
 	mux.HandleFunc("/orders", h.handleOrders)
 	mux.HandleFunc("/orders/", h.handleOrderByID)
 
+	// Reports routes
+	mux.HandleFunc("/reports/sales", h.handleReportsSales)
+
 	return mux
 }
 
@@ -127,6 +130,20 @@ func (h *Handler) handleOrderByID(w http.ResponseWriter, r *http.Request) {
 		h.UpdateOrder(w, r)
 	case http.MethodDelete:
 		h.DeleteOrder(w, r)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+// handleReportsSales routes requests to /reports/sales
+func (h *Handler) handleReportsSales(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/reports/sales" {
+		http.NotFound(w, r)
+		return
+	}
+	switch r.Method {
+	case http.MethodGet:
+		h.GetSalesReports(w, r)
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}

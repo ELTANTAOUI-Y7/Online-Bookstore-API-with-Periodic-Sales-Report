@@ -2,7 +2,7 @@
 
 ## Project Status
 
-This project implements an Online Bookstore API with Periodic Sales Report generation. Currently, **Parts 1, 2, 3, 5, 6, 7, and 8** are completed.
+This project implements an Online Bookstore API with Periodic Sales Report generation. Currently, **Parts 1, 2, 3, 5, 6, 7, 8, and 11** are completed.
 
 ## Completed Parts
 
@@ -16,7 +16,7 @@ This project implements an Online Bookstore API with Periodic Sales Report gener
   - `Order` struct with nested `Customer` and `OrderItem[]`
   - `OrderItem` struct with nested `Book`
   - `Address` struct
-  - `SalesReport` struct with nested `BookSales[]`
+  - `SalesReport` struct (timestamp, total revenue, total orders, total books sold, top-selling books) with nested `BookSales[]`
   - `BookSales` struct
   - `SearchCriteria` struct
   - `ErrorResponse` struct
@@ -129,48 +129,35 @@ This project implements an Online Bookstore API with Periodic Sales Report gener
   - [x] Search operations logged with criteria and result counts
   - [x] List operations logged with result counts
 
+### ✅ Part 11: Periodic Sales Report Generation
+- [x] `reports/` package created with report generation logic
+- [x] `GenerateSalesReport()` function:
+  - [x] Fetches orders within the last 24 hours using `OrderStore.GetOrdersInTimeRange`
+  - [x] Aggregates total revenue, total orders, total books sold
+  - [x] Identifies top-selling books (top 10)
+  - [x] Returns `SalesReport` with all aggregated data
+- [x] Report storage:
+  - [x] Reports saved to `output-reports/` (directory created if needed)
+  - [x] Filename format: `report_DDMMYYYYHHmm.json` (e.g. `report_250120261430.json`)
+  - [x] JSON content with timestamp, revenue, orders, books sold, top-selling books
+- [x] Background task:
+  - [x] Goroutine runs report at startup, then every 24 hours via `time.Ticker`
+  - [x] Context-based cancellation for graceful shutdown (`reportCancel()` on SIGINT/SIGTERM)
+  - [x] Concurrency-safe: uses store's existing mutex via `GetOrdersInTimeRange`
+- [x] Sales Report API endpoint:
+  - [x] `GET /reports/sales?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD` (query params optional; default last 30 days)
+  - [x] Loads matching reports from `output-reports/` and returns JSON array
+- [x] Integration in `main.go`: report generator started with server, stopped before shutdown
+
 ## Remaining Parts - To Do List
 
-### 📋 Part 6: Periodic Sales Report Generation
-- [ ] Create `reports/` package for report generation logic
-- [ ] Implement `generateSalesReport()` function:
-  - [ ] Fetch orders within the last 24 hours using `GetOrdersInTimeRange`
-  - [ ] Calculate total revenue
-  - [ ] Count total number of orders
-  - [ ] Calculate total books sold
-  - [ ] Identify top-selling books
-  - [ ] Create `SalesReport` struct with aggregated data
-- [ ] Implement report storage:
-  - [ ] Create `output-reports/` directory if it doesn't exist
-  - [ ] Save reports as JSON files with timestamp in filename (e.g., `report_090120250000.json`)
-  - [ ] Format: `report_MMDDYYYYHHMM.json`
-- [ ] Set up periodic background task:
-  - [ ] Use `time.Ticker` to schedule daily execution (every 24 hours)
-  - [ ] Run as a goroutine that doesn't block the main server
-  - [ ] Handle context cancellation for graceful shutdown
-- [ ] Implement Sales Report API endpoint:
-  - [ ] `GET /reports/sales?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD`
-  - [ ] Parse query parameters for date range
-  - [ ] Load and return matching reports from `output-reports/` directory
-  - [ ] Return JSON array of reports
-- [ ] Integrate background task with main server:
-  - [ ] Start report generator when server starts
-  - [ ] Handle graceful shutdown using context
+### 📋 Documentation
+- [x] README with build/run instructions and API overview
+- [ ] Environment variables or configuration options (if needed)
+- [ ] Manual test cases section
+- [x] OpenAPI specification in `openapi.yaml` (endpoints, schemas, examples)
 
-### 📋 Part 7: Documentation
-- [ ] Update README.md with:
-- [ ] How to build and run the application
-- [ ] API endpoint documentation with examples
-- [ ] Request/response examples for each endpoint
-- [ ] Environment variables or configuration options
-- [ ] Manual test cases showcasing functionality
-- [ ] Create OpenAPI/Swagger specification file:
-- [x] Define all endpoints
-- [x] Document request/response schemas
-- [x] Include example requests and responses
-- [x] Save as `openapi.yaml`
-
-### 📋 Part 8: Testing and Finalization
+### 📋 Testing and Finalization
 - [ ] Test all CRUD operations for each entity
 - [ ] Test concurrent request handling
 - [ ] Test periodic report generation
@@ -199,8 +186,8 @@ online-bookstore-api/
 │   ├── customerstore.go   # In-memory customer store implementation
 │   ├── orderstore.go      # In-memory order store implementation
 │   └── persistence.go    # Save/load functionality
-├── handlers/              # HTTP handlers (to be implemented)
-├── reports/               # Report generation logic (to be implemented)
+├── handlers/              # HTTP handlers (books, authors, customers, orders, reports)
+├── reports/               # Sales report generation and file loader
 └── README.md              # This file
 ```
 
@@ -228,6 +215,7 @@ Base URL: `http://localhost:8080`
 - `Books` – `/books`, `/books/{id}`
 - `Customers` – `/customers`, `/customers/{id}`
 - `Orders` – `/orders`, `/orders/{id}`
+- `Reports` – `/reports/sales` (GET, optional `start_date` & `end_date` query params)
 
 ## API Endpoints (Summary)
 
@@ -339,6 +327,40 @@ curl -X POST http://localhost:8080/customers \
 - `PUT /orders/{id}` – Update an order
 - `DELETE /orders/{id}` – Delete an order
 
+### Sales Reports
+
+- `GET /reports/sales` – List sales reports in a date range
+  - Query params (optional): `start_date=YYYY-MM-DD`, `end_date=YYYY-MM-DD`
+  - If omitted, returns reports from the last 30 days
+  - Reports are generated automatically every 24 hours and at startup; each report covers the previous 24 hours (total revenue, total orders, total books sold, top-selling books)
+
+**Example – Get Sales Reports (request):**
+
+```bash
+# All reports in default range (last 30 days)
+curl http://localhost:8080/reports/sales
+
+# Reports between two dates
+curl "http://localhost:8080/reports/sales?start_date=2026-01-01&end_date=2026-01-25"
+```
+
+**Example – Sales Report (response item):**
+
+```json
+{
+  "timestamp": "2026-01-25T14:30:00Z",
+  "total_revenue": 159.96,
+  "total_orders": 2,
+  "total_books_sold": 4,
+  "top_selling_books": [
+    {
+      "book": { "id": 1, "title": "Effective Go Concurrency", "author": {...}, "genres": ["Programming"], "published_at": "2021-07-15T00:00:00Z", "price": 39.99, "stock": 98 },
+      "quantity_sold": 3
+    }
+  ]
+}
+```
+
 **Example – Create Order (request):**
 
 ```bash
@@ -446,19 +468,23 @@ curl -X POST http://localhost:8080/orders \
   -d '{"customer": {"id": 1}, "items": [{"book": {"id": 1}, "quantity": 2}], "status": "pending"}'
 ```
 
+**Get Sales Reports:**
+```bash
+curl http://localhost:8080/reports/sales
+curl "http://localhost:8080/reports/sales?start_date=2026-01-01&end_date=2026-01-25"
+```
+
 ## Next Steps
 
-1. Start with **Part 3** to implement the RESTful API endpoints
-2. Test each endpoint as you implement it
-3. Move to **Part 4** for concurrency and context handling
-4. Implement error handling and logging in **Part 5**
-5. Add the periodic sales report in **Part 6**
-6. Complete documentation in **Part 7**
-7. Finalize with testing in **Part 8**
+1. Run the server and test all CRUD and report endpoints
+2. Add or extend OpenAPI spec for `/reports/sales` if desired
+3. Add automated tests (unit/integration) and manual test cases
+4. Optionally add environment variables for port and report output directory
 
 ## Notes
 
 - All stores are thread-safe using `sync.RWMutex`
-- Data is automatically saved to `database.json` (you'll need to implement the save trigger)
+- Data is automatically saved to `database.json` on graceful shutdown (SIGINT/SIGTERM)
 - Data is automatically loaded from `database.json` on application start
+- Sales reports run at startup and every 24 hours; reports are written to `output-reports/` as JSON files
 - The project uses only Go standard library packages

@@ -5,6 +5,8 @@ import (
 	"log"
 	"net/http"
 	"online-bookstore-api/handlers"
+	"online-bookstore-api/interfaces"
+	"online-bookstore-api/reports"
 	"online-bookstore-api/stores"
 	"os"
 	"os/signal"
@@ -26,8 +28,10 @@ func main() {
 
 	log.Println("Stores initialized successfully")
 
+	reportOutputDir := "output-reports"
+
 	// Initialize handlers
-	handler := handlers.NewHandler(bookStore, authorStore, customerStore, orderStore)
+	handler := handlers.NewHandler(bookStore, authorStore, customerStore, orderStore, reportOutputDir)
 
 	// Setup routes
 	router := handler.SetupRoutes()
@@ -42,6 +46,10 @@ func main() {
 		Handler: loggedRouter,
 	}
 
+	// Background sales report: run at startup and every 24 hours
+	reportCtx, reportCancel := context.WithCancel(context.Background())
+	go runPeriodicSalesReport(reportCtx, orderStore, reportOutputDir)
+
 	// Start server in a goroutine
 	go func() {
 		log.Printf("Starting server on port %s", port)
@@ -55,6 +63,9 @@ func main() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
+
+	// Stop periodic report generator
+	reportCancel()
 
 	log.Println("Shutting down server...")
 
@@ -75,6 +86,31 @@ func main() {
 	}
 
 	log.Println("Server exited")
+}
+
+// runPeriodicSalesReport runs a sales report at startup and then every 24 hours until ctx is cancelled.
+func runPeriodicSalesReport(ctx context.Context, orderStore interfaces.OrderStore, outputDir string) {
+	tick := time.NewTicker(24 * time.Hour)
+	defer tick.Stop()
+
+	run := func() {
+		if _, _, err := reports.GenerateAndSave(orderStore, outputDir); err != nil {
+			log.Printf("Sales report generation failed: %v", err)
+		}
+	}
+
+	// Run once at startup
+	run()
+
+	for {
+		select {
+		case <-ctx.Done():
+			log.Println("Sales report generator stopped")
+			return
+		case <-tick.C:
+			run()
+		}
+	}
 }
 
 // responseWriter wraps http.ResponseWriter to capture status code
