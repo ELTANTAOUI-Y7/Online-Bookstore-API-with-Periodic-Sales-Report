@@ -10,6 +10,7 @@ import (
 	"online-bookstore-api/stores"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -21,14 +22,32 @@ func main() {
 	customerStore := stores.NewInMemoryCustomerStore()
 	orderStore := stores.NewInMemoryOrderStore()
 
+	// Load configuration from environment variables
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = ":8080"
+	} else {
+		if !strings.HasPrefix(port, ":") {
+			port = ":" + port
+		}
+	}
+
+	reportOutputDir := os.Getenv("REPORT_OUTPUT_DIR")
+	if reportOutputDir == "" {
+		reportOutputDir = "output-reports"
+	}
+
+	databaseFile := os.Getenv("DATABASE_FILE")
+	if databaseFile == "" {
+		databaseFile = "database.json"
+	}
+
 	// Load data from persistence if it exists
-	if err := stores.LoadDatabase(bookStore, authorStore, customerStore, orderStore, "database.json"); err != nil {
-		log.Printf("Warning: Failed to load database: %v", err)
+	if err := stores.LoadDatabase(bookStore, authorStore, customerStore, orderStore, databaseFile); err != nil {
+		log.Printf("Warning: Failed to load database (%s): %v", databaseFile, err)
 	}
 
 	log.Println("Stores initialized successfully")
-
-	reportOutputDir := "output-reports"
 
 	// Initialize handlers
 	handler := handlers.NewHandler(bookStore, authorStore, customerStore, orderStore, reportOutputDir)
@@ -40,7 +59,6 @@ func main() {
 	loggedRouter := loggingMiddleware(router)
 
 	// Create HTTP server
-	port := ":8080"
 	server := &http.Server{
 		Addr:    port,
 		Handler: loggedRouter,
@@ -71,8 +89,8 @@ func main() {
 
 	// Save data before shutdown
 	log.Println("Saving database...")
-	if err := stores.SaveDatabase(bookStore, authorStore, customerStore, orderStore, "database.json"); err != nil {
-		log.Printf("Error saving database: %v", err)
+	if err := stores.SaveDatabase(bookStore, authorStore, customerStore, orderStore, databaseFile); err != nil {
+		log.Printf("Error saving database (%s): %v", databaseFile, err)
 	} else {
 		log.Println("Database saved successfully")
 	}
@@ -116,7 +134,7 @@ func runPeriodicSalesReport(ctx context.Context, orderStore interfaces.OrderStor
 // responseWriter wraps http.ResponseWriter to capture status code
 type responseWriter struct {
 	http.ResponseWriter
-	statusCode int
+	statusCode   int
 	bytesWritten int64
 }
 
@@ -142,22 +160,22 @@ func (rw *responseWriter) Write(b []byte) (int, error) {
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		
+
 		// Wrap the response writer to capture status code
 		rw := newResponseWriter(w)
-		
+
 		// Process the request
 		next.ServeHTTP(rw, r)
-		
+
 		// Calculate duration
 		duration := time.Since(start)
-		
+
 		// Get client IP
 		clientIP := r.RemoteAddr
 		if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
 			clientIP = forwarded
 		}
-		
+
 		// Log request details
 		log.Printf(
 			"[%s] %s %s %s %d %d %v",
@@ -169,7 +187,7 @@ func loggingMiddleware(next http.Handler) http.Handler {
 			rw.bytesWritten,
 			duration,
 		)
-		
+
 		// Log errors (4xx and 5xx status codes)
 		if rw.statusCode >= 400 {
 			log.Printf(

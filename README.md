@@ -153,8 +153,8 @@ This project implements an Online Bookstore API with Periodic Sales Report gener
 
 ### 📋 Documentation
 - [x] README with build/run instructions and API overview
-- [ ] Environment variables or configuration options (if needed)
-- [ ] Manual test cases section
+- [x] Environment variables or configuration options (documented below)
+- [x] Manual test cases section (examples provided)
 - [x] OpenAPI specification in `openapi.yaml` (endpoints, schemas, examples)
 
 ### 📋 Testing and Finalization
@@ -204,6 +204,54 @@ go build -o bookstore.exe .
 ```
 
 The server will start on `http://localhost:8080`. You can test the API endpoints using tools like `curl` or Postman.
+
+## Configuration / Environment variables
+
+You can use environment variables to configure runtime behavior:
+
+- `PORT` (default: `:8080`) — Port to listen on. Can be set as `8080` or `:8080`.
+- `REPORT_OUTPUT_DIR` (default: `output-reports`) — Directory where sales reports are written.
+- `DATABASE_FILE` (default: `database.json`) — File path used to save/load persistent data.
+
+Examples:
+
+- Linux/macOS:
+  ```bash
+  PORT=8081 REPORT_OUTPUT_DIR=/var/reports DATABASE_FILE=/data/db.json ./bookstore.exe
+  ```
+- Windows (PowerShell):
+  ```powershell
+  $env:PORT='8081'; $env:REPORT_OUTPUT_DIR='C:\reports'; $env:DATABASE_FILE='C:\data\database.json'; .\bookstore.exe
+  ```
+
+Notes: When using PowerShell, `curl` may behave differently. Use `curl.exe` or `curl --%` to pass raw arguments, or pass JSON as an escaped string.
+
+## Manual test cases
+
+Basic manual tests:
+
+1. Create an author:
+   ```bash
+   curl -X POST http://localhost:8080/authors -H "Content-Type: application/json" -d '{"first_name":"John","last_name":"Doe","bio":"Author bio"}'
+   ```
+2. Create a book (use existing author id):
+   ```bash
+   curl -X POST http://localhost:8080/books -H "Content-Type: application/json" -d '{"title":"Title","author":{"id":1},"genres":["Programming"],"published_at":"2021-07-15T00:00:00Z","price":39.99,"stock":100}'
+   ```
+3. Create a customer:
+   ```bash
+   curl -X POST http://localhost:8080/customers -H "Content-Type: application/json" -d '{"name":"Jane Smith","email":"jane@example.com","address":{"street":"123 Main St","city":"NY","state":"NY","postal_code":"10001","country":"USA"}}'
+   ```
+4. Create an order:
+   ```bash
+   curl -X POST http://localhost:8080/orders -H "Content-Type: application/json" -d '{"customer":{"id":1},"items":[{"book":{"id":1},"quantity":2}],"status":"pending"}'
+   ```
+5. Retrieve sales reports:
+   ```bash
+   curl http://localhost:8080/reports/sales
+   ```
+6. Verify persistence: create data -> stop server (Ctrl+C) -> start server -> confirm entities via GET endpoints.
+7. Concurrent test: run a small script or use `hey`/`ab` to issue concurrent requests and verify no data corruption.
 
 ## API Overview
 

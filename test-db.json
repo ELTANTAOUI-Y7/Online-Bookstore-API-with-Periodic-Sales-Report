@@ -1,0 +1,12 @@
+{
+  "books": {},
+  "authors": {},
+  "customers": {},
+  "orders": {},
+  "next_ids": {
+    "book": 1,
+    "author": 1,
+    "customer": 1,
+    "order": 1
+  }
+}
