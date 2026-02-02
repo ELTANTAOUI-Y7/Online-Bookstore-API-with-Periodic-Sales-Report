@@ -158,14 +158,14 @@ This project implements an Online Bookstore API with Periodic Sales Report gener
 - [x] OpenAPI specification in `openapi.yaml` (endpoints, schemas, examples)
 
 ### 📋 Testing and Finalization
-- [ ] Test all CRUD operations for each entity
-- [ ] Test concurrent request handling
-- [ ] Test periodic report generation
-- [ ] Test data persistence (save/load from `database.json`)
-- [ ] Verify graceful shutdown
-- [ ] Clean up any temporary files or test data
-- [ ] Ensure code compiles without warnings
-- [ ] Review code quality and organization
+- [x] Test all CRUD operations for each entity
+- [x] Test concurrent request handling
+- [x] Test periodic report generation
+- [x] Test data persistence (save/load from `database.json`)
+- [x] Verify graceful shutdown
+- [x] Clean up any temporary files or test data
+- [x] Ensure code compiles without warnings
+- [x] Review code quality and organization
 
 ## Project Structure
 
